@@ -1,5 +1,6 @@
-nama,password,role
-Raffy,admin,admin
-Rabi,admin,admin
-Ainun,admin,admin
-Helmy,123,user
+nama,password,role,ipk,saldo
+Raffy,admin,admin,4.0,0
+Rabi,admin,admin,4.0,0
+Ainun,admin,admin,4.0,0
+Helmy,123,admin,3.5,2000000.0
+Helga,Konco,user,4.0,0
