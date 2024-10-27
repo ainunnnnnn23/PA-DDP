@@ -1,4 +1,4 @@
-#LAST UPDATE 28-10-07.00
+#last update 28-10-07.37
 
 import pwinput
 import csv
@@ -26,9 +26,9 @@ def cek_akun_terdaftar(nama):
 
 # Buat nyimpan nama akun di file csv dengan role sebagai "user"
 def simpan_data_akun(nama, password, ipk):
-    dataheader_akun = ["nama", "password", "role", "ipk"]
+    dataheader_akun = ["nama", "password", "role", "ipk", "saldo"]
     data_akun = [
-        {"nama": nama, "password": password, "role": "user", "ipk": ipk} 
+        {"nama": nama, "password": password, "role": "user", "ipk": ipk, "saldo": 0} 
     ]
     try:
         with open(csv_file, "a", newline="", encoding="utf-8") as akun_file:
@@ -84,7 +84,7 @@ def lihat_data_user():
         print("File data.csv tidak ditemukan.")
 
 def tambah_beasiswa(nama, ipk, jumlah, kuota):
-    dataheader_beasiswa = ["id", "nama", "ipk", "jumlah", "pendaftar"]
+    dataheader_beasiswa = ["id", "nama", "ipk", "jumlah", "Kuota"]
     
     try:
         with open('beasiswa.csv', mode='r', newline='', encoding='utf-8') as file:
@@ -94,7 +94,7 @@ def tambah_beasiswa(nama, ipk, jumlah, kuota):
         id_terakhir = 1 
 
     data_beasiswa = [
-        {"id": id_terakhir, "nama": nama, "ipk": ipk, "jumlah": jumlah, "pendaftar": kuota}
+        {"id": id_terakhir, "nama": nama, "ipk": ipk, "jumlah": jumlah, "Kuota": kuota}
     ]
 
     try:
@@ -108,13 +108,73 @@ def tambah_beasiswa(nama, ipk, jumlah, kuota):
     except Exception as e:
         print(f"Terjadi kesalahan: {e}")
 
+#buat update beasiswa
+def update_beasiswa(beasiswa_id, ipk=None, jumlah=None, kuota=None):
+    updated = False
+    data = []
+    try:
+        with open('beasiswa.csv', mode='r', newline='', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            data = list(reader)
+
+        for row in data:
+            if row['id'] == beasiswa_id:
+                if ipk is not None:
+                    row['ipk'] = ipk
+                if jumlah is not None:
+                    row['jumlah'] = jumlah
+                if kuota is not None:
+                    row['Kuota'] = kuota
+                updated = True
+
+        if updated:
+            with open('beasiswa.csv', mode='w', newline='', encoding='utf-8') as file:
+                writer = csv.DictWriter(file, fieldnames=data[0].keys())
+                writer.writeheader()
+                writer.writerows(data)
+            print(f"Data beasiswa dengan ID {beasiswa_id} berhasil diperbarui.")
+        else:
+            print(f"Beasiswa dengan ID {beasiswa_id} tidak ditemukan.")
+    except FileNotFoundError:
+        print("File beasiswa.csv tidak ditemukan.")
+
+#Buat update data
+def update_data_user(nama, role=None, saldo=None):
+    updated = False
+    data = []
+    try:
+        with open('data.csv', mode='r', newline='', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            data = list(reader)
+        
+        for row in data:
+            if row['nama'] == nama:
+                if role:
+                    row['role'] = role
+                if saldo is not None:
+                    row['saldo'] = saldo
+                updated = True
+        
+        if updated:
+            with open('data.csv', mode='w', newline='', encoding='utf-8') as file:
+                writer = csv.DictWriter(file, fieldnames=data[0].keys())
+                writer.writeheader()
+                writer.writerows(data)
+            print(f"Data user {nama} berhasil diperbarui.")
+        else:
+            print(f"User {nama} tidak ditemukan.")
+    except FileNotFoundError:
+        print("File data.csv tidak ditemukan.")
+
+
 # Buat menu Admin
 def menu_admin():
     while True:
         print("==== Menu Admin ====")
         print("1. Lihat beasiswa/user")
         print("2. Tambah beasiswa")
-        print("3. Logout")
+        print("3. Update beasiswa/user")
+        print("5. Logout")
         pilihan = input("Masukan pilihan: ")
 
         #Buat lihat
@@ -131,16 +191,40 @@ def menu_admin():
         elif pilihan == "2":
             while True:
                 nama = input("Masukan nama beasiswa: ")
-                ipk = float(input("Masukan jumlah minimal ipk: "))
-                if ipk > 4.0:
-                    print("IPK tidak boleh melebihi 4")
-                    continue
-                jumlah = float(input("Masukan jumlah beasiswa: "))
-                kuota = int(input("Masukan kuota beasiswa: "))
-                tambah_beasiswa(nama, ipk, jumlah, kuota)
-                break
+                try:
+                    ipk = float(input("Masukan jumlah minimal ipk: "))
+                    if ipk > 4.0:
+                        print("IPK tidak boleh melebihi 4")
+                        continue
+                    jumlah = float(input("Masukan jumlah beasiswa: "))
+                    kuota = int(input("Masukan kuota beasiswa: "))
+                    tambah_beasiswa(nama, ipk, jumlah, kuota)
+                    break
+                except ValueError:
+                    print("Nilai yang anda masukan bukan merupakan angka")
         
         elif pilihan == "3":
+            print("1. Update akun")
+            print("2. Update Beasiswa")
+            pil_1 = input("Masukan pilihan: ")
+            if pil_1 == "1":
+                nama = input("Masukkan nama user: ")
+                print("Pilih Role Baru:")
+                print("1. Admin")
+                print("2. User")
+                role_option = input("Masukkan pilihan role (1 untuk Admin, 2 untuk User): ")
+                role = "admin" if role_option == "1" else "user" if role_option == "2" else None
+                saldo = input("Masukkan saldo baru (kosongkan jika tidak ingin mengubah): ")
+                saldo = float(saldo) if saldo else None
+                update_data_user(nama, role, saldo)
+            elif pil_1 == "2":
+                beasiswa_id = input("Masukkan ID beasiswa: ")
+                ipk = input("Masukkan IPK baru (kosongkan jika tidak ingin mengubah): ")
+                jumlah = input("Masukkan jumlah beasiswa baru (kosongkan jika tidak ingin mengubah): ")
+                kuota = input("Masukkan kuota beasiswa baru (kosongkan jika tidak ingin mengubah): ")
+                update_beasiswa(beasiswa_id, float(ipk) if ipk else None, float(jumlah) if jumlah else None, int(kuota) if kuota else None)
+
+        elif pilihan == "5":
             menu_login()  
 
 # Buat menu user
@@ -204,9 +288,15 @@ def menu_login():
                     if password == "":
                         print("Password tidak boleh kosong")
                         continue
-                    ipk = float(input("Masukan IPK: "))
-                    simpan_data_akun(nama, password, ipk)
-                    break
+                    try:
+                        ipk = float(input("Masukan IPK: "))
+                        if ipk > 4:
+                            print("IPK tidak boleh melebihi 4")
+                            continue
+                        simpan_data_akun(nama, password, ipk)
+                        break
+                    except ValueError:
+                        print("Nilai yang anda masukan bukan merupakan angka")
 
         # Buat keluar program
         elif pil_1 == "3": 
