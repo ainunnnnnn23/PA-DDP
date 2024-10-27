@@ -23,10 +23,10 @@ def cek_akun_terdaftar(nama):
         return False
 
 # Buat nyimpan nama akun di file csv dengan role sebagai "user"
-def simpan_data_akun(nama, password):
-    dataheader_akun = ["nama", "password", "role"]
+def simpan_data_akun(nama, password, ipk):
+    dataheader_akun = ["nama", "password", "role", "ipk"]
     data_akun = [
-        {"nama": nama, "password": password, "role": "user"} 
+        {"nama": nama, "password": password, "role": "user", "ipk": ipk} 
     ]
     try:
         with open(csv_file, "a", newline="", encoding="utf-8") as akun_file:
@@ -67,6 +67,45 @@ def lihat_beasiswa():
     except FileNotFoundError:
         print("File beasiswa.csv tidak ditemukan.")
 
+def lihat_data_user():
+    table = PrettyTable()
+    table.field_names = ["Nama", "Password", "Role"]
+    
+    try:
+        with open('data.csv', mode='r', newline='', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                table.add_row([row['nama'], row['password'], row['role']])
+
+        print(table)
+    except FileNotFoundError:
+        print("File data.csv tidak ditemukan.")
+
+def tambah_beasiswa(nama, ipk, jumlah, kuota):
+    dataheader_beasiswa = ["id", "nama", "ipk", "jumlah", "pendaftar"]
+    
+    try:
+        with open('beasiswa.csv', mode='r', newline='', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            id_terakhir = max([int(row['id']) for row in reader], default=0) + 1
+    except FileNotFoundError:
+        id_terakhir = 1 
+
+    data_beasiswa = [
+        {"id": id_terakhir, "nama": nama, "ipk": ipk, "jumlah": jumlah, "pendaftar": kuota}
+    ]
+
+    try:
+        with open('beasiswa.csv', mode='a', newline="", encoding="utf-8") as file:
+            writer = csv.DictWriter(file, fieldnames=dataheader_beasiswa)
+            file.seek(0, 2)  
+            if file.tell() == 0:  
+                writer.writeheader()
+            writer.writerows(data_beasiswa)  
+        print("Beasiswa berhasil ditambahkan.")
+    except Exception as e:
+        print(f"Terjadi kesalahan: {e}")
+
 # Buat menu Admin
 def menu_admin():
     while True:
@@ -75,14 +114,29 @@ def menu_admin():
         print("2. Tambah beasiswa")
         print("3. Logout")
         pilihan = input("Masukan pilihan: ")
+
+        #Buat lihat
         if pilihan == "1":
             print("1. Lihat akun")
             print("2. Lihat Beasiswa")
             pil_1 = input("Masukan pilihan: ")
             if pil_1 == "1":
-                print("Masih dalam pengembangan")
+                lihat_data_user()
             if pil_1 == "2":
                 lihat_beasiswa()
+        
+        #Buat nambah
+        elif pilihan == "2":
+            while True:
+                nama = input("Masukan nama beasiswa: ")
+                ipk = float(input("Masukan jumlah minimal ipk: "))
+                if ipk > 4.0:
+                    print("IPK tidak boleh melebihi 4")
+                    continue
+                jumlah = float(input("Masukan jumlah beasiswa: "))
+                kuota = int(input("Masukan kuota beasiswa: "))
+                tambah_beasiswa(nama, ipk, jumlah, kuota)
+                break
         
         elif pilihan == "3":
             menu_login()  
@@ -148,7 +202,8 @@ def menu_login():
                     if password == "":
                         print("Password tidak boleh kosong")
                         continue
-                    simpan_data_akun(nama, password)
+                    ipk = float(input("Masukan IPK: "))
+                    simpan_data_akun(nama, password, ipk)
                     break
 
         # Buat keluar program
