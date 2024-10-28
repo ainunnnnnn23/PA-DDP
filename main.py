@@ -1,4 +1,4 @@
-#last update 28-10-07.37
+#last update 28-10-08.12
 
 import pwinput
 import csv
@@ -207,22 +207,73 @@ def menu_admin():
             print("1. Update akun")
             print("2. Update Beasiswa")
             pil_1 = input("Masukan pilihan: ")
+            
             if pil_1 == "1":
                 nama = input("Masukkan nama user: ")
                 print("Pilih Role Baru:")
                 print("1. Admin")
                 print("2. User")
+                valid_input = True  # Flag untuk cek validitas input
+                
+                # Memilih role dengan validasi
                 role_option = input("Masukkan pilihan role (1 untuk Admin, 2 untuk User): ")
-                role = "admin" if role_option == "1" else "user" if role_option == "2" else None
-                saldo = input("Masukkan saldo baru (kosongkan jika tidak ingin mengubah): ")
-                saldo = float(saldo) if saldo else None
-                update_data_user(nama, role, saldo)
+                if role_option == "1":
+                    role = "admin"
+                elif role_option == "2":
+                    role = "user"
+                else:
+                    print("Pilihan role tidak valid")
+                    valid_input = False  # Set flag ke False jika input tidak valid
+
+                # Memasukkan saldo dengan validasi
+                if valid_input:  
+                    saldo_input = input("Masukkan saldo baru (kosongkan jika tidak ingin mengubah): ")
+                    try:
+                        saldo = float(saldo_input) if saldo_input else None
+                    except ValueError:
+                        print("Nilai saldo yang anda masukan bukan merupakan angka")
+                        valid_input = False  # Set flag ke False jika input saldo tidak valid
+
+                # Panggil update_data_user hanya jika semua input valid
+                if valid_input:
+                    update_data_user(nama, role, saldo)
+                else:
+                    print("Data tidak dapat diperbarui karena input tidak valid.")
+
             elif pil_1 == "2":
                 beasiswa_id = input("Masukkan ID beasiswa: ")
-                ipk = input("Masukkan IPK baru (kosongkan jika tidak ingin mengubah): ")
-                jumlah = input("Masukkan jumlah beasiswa baru (kosongkan jika tidak ingin mengubah): ")
-                kuota = input("Masukkan kuota beasiswa baru (kosongkan jika tidak ingin mengubah): ")
-                update_beasiswa(beasiswa_id, float(ipk) if ipk else None, float(jumlah) if jumlah else None, int(kuota) if kuota else None)
+                valid_input = True  # Flag untuk cek validitas input
+                
+                # Validasi input IPK
+                ipk_input = input("Masukkan IPK baru (kosongkan jika tidak ingin mengubah): ")
+                try:
+                    ipk = float(ipk_input) if ipk_input else None
+                except ValueError:
+                    print("Nilai IPK yang anda masukkan bukan merupakan angka")
+                    valid_input = False         
+
+                # Validasi input Jumlah Beasiswa
+                if valid_input:  
+                    jumlah_input = input("Masukkan jumlah beasiswa baru (kosongkan jika tidak ingin mengubah): ")
+                    try:
+                        jumlah = float(jumlah_input) if jumlah_input else None
+                    except ValueError:
+                        print("Nilai jumlah beasiswa yang anda masukkan bukan merupakan angka")
+                        valid_input = False 
+
+                # Validasi input Kuota
+                if valid_input: 
+                    kuota_input = input("Masukkan kuota beasiswa baru (kosongkan jika tidak ingin mengubah): ")
+                    try:
+                        kuota = int(kuota_input) if kuota_input else None
+                    except ValueError:
+                        print("Nilai kuota yang anda masukkan bukan merupakan angka")
+                        valid_input = False  
+
+                if valid_input:
+                    update_beasiswa(beasiswa_id, ipk, jumlah, kuota)
+                else:
+                    print("Data beasiswa tidak dapat diperbarui karena input tidak valid.")
 
         elif pilihan == "5":
             menu_login()  
