@@ -1,4 +1,4 @@
-#last update 28-10-08.12
+#last update 28-10-08.16
 
 import pwinput
 import csv
@@ -209,6 +209,7 @@ def menu_admin():
             pil_1 = input("Masukan pilihan: ")
             
             if pil_1 == "1":
+                lihat_data_user()
                 nama = input("Masukkan nama user: ")
                 print("Pilih Role Baru:")
                 print("1. Admin")
@@ -241,6 +242,7 @@ def menu_admin():
                     print("Data tidak dapat diperbarui karena input tidak valid.")
 
             elif pil_1 == "2":
+                lihat_beasiswa()
                 beasiswa_id = input("Masukkan ID beasiswa: ")
                 valid_input = True  # Flag untuk cek validitas input
                 
