@@ -1,4 +1,4 @@
-#last update 29-10-18.04
+#last update 30-10-17.39
 
 import pwinput
 import csv
@@ -193,6 +193,18 @@ def hapus_akun(nama):
             writer.writerows(data)
         print(f"Akun dengan nama {nama} berhasil dihapus.")
 
+def get_nama_beasiswa_by_id(beasiswa_id):
+    try:
+        with open('beasiswa.csv', mode='r', newline='', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                if row['id'] == str(beasiswa_id):
+                    return row['nama']  # Mengembalikan nama beasiswa jika ID cocok
+        return None  # Jika ID tidak ditemukan
+    except FileNotFoundError:
+        print("File beasiswa.csv tidak ditemukan.")
+        return None
+
 def hapus_beasiswa(beasiswa_id):
     data = []
     deleted = False
@@ -221,36 +233,50 @@ def hapus_beasiswa(beasiswa_id):
         print(f"Beasiswa dengan ID {beasiswa_id} berhasil dihapus.")
 
 def simpan_transaksi(nama_user, beasiswa_id, jumlah_beasiswa):
-    dataheader_transaksi = ["id_transaksi", "nama_user", "beasiswa_id", "jumlah_beasiswa", "tanggal"]
+    dataheader_transaksi = ["id_transaksi", "nama_user", "nama_beasiswa", "jumlah_beasiswa", "tanggal"]
     
-    # Membaca ID terakhir dari Transaksi.csv untuk menambah ID baru
-    try:
-        with open('Transaksi.csv', mode='r', newline='', encoding='utf-8') as file:
-            reader = csv.DictReader(file)
-            id_terakhir = max([int(row['id_transaksi']) for row in reader], default=0) + 1
-    except FileNotFoundError:
-        id_terakhir = 1
+    x = True
+    nama_beasiswa = get_nama_beasiswa_by_id(beasiswa_id)
+    if not nama_beasiswa:
+        print("Beasiswa dengan ID tersebut tidak ditemukan.")
+        return
+    if x == False:
+        try:
+            with open('Transaksi.csv', mode='r', newline='', encoding='utf-8') as file:
+                reader = csv.DictReader(file)
+                id_terakhir = max([int(row['id_transaksi']) for row in reader], default=0) + 1
+        except FileNotFoundError:
+            id_terakhir = 1
 
-    # Data transaksi baru
-    data_transaksi = [{
-        "id_transaksi": id_terakhir,
-        "nama_user": nama_user,
-        "beasiswa_id": beasiswa_id,
-        "jumlah_beasiswa": jumlah_beasiswa,
-        "tanggal": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }]
-    
-    # Simpan transaksi ke file
-    try:
-        with open('Transaksi.csv', mode='a', newline='', encoding='utf-8') as file:
-            writer = csv.DictWriter(file, fieldnames=dataheader_transaksi)
-            file.seek(0, 2)  # Menulis header jika file kosong
-            if file.tell() == 0:
-                writer.writeheader()
-            writer.writerows(data_transaksi)
-        print("Transaksi berhasil disimpan.")
-    except Exception as e:
-        print(f"Terjadi kesalahan saat menyimpan transaksi: {e}")
+        # Data transaksi baru dengan nama beasiswa
+        data_transaksi = [{
+            "id_transaksi": id_terakhir,
+            "nama_user": nama_user,
+            "nama_beasiswa": nama_beasiswa,
+            "jumlah_beasiswa": jumlah_beasiswa,
+            "tanggal": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }]
+        
+        # Simpan transaksi ke file
+        try:
+            with open('Transaksi.csv', mode='a', newline='', encoding='utf-8') as file:
+                writer = csv.DictWriter(file, fieldnames=dataheader_transaksi)
+                file.seek(0, 2)  # Menulis header jika file kosong
+                if file.tell() == 0:
+                    writer.writeheader()
+                writer.writerows(data_transaksi)
+            print("Transaksi berhasil disimpan.")
+        except Exception as e:
+            print(f"Terjadi kesalahan saat menyimpan transaksi: {e}")
+    else:
+        daftar_beasiswa_cuma_sekali(nama_beasiswa)
+
+def daftar_beasiswa_cuma_sekali(nama_beasiswa):
+    with open("Transaksi.csv", mode="r", newline="", encoding="utf-8") as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            if row["nama_beasiswa"] == nama_beasiswa:
+                print("Kamu telah mendaftar beasiswa ini")
 
 def daftar_beasiswa(nama_user, beasiswa_id):
     beasiswa_data = []
@@ -270,7 +296,7 @@ def daftar_beasiswa(nama_user, beasiswa_id):
                     break
 
         for row in beasiswa_data:
-            if row['id'] == str(beasiswa_id):
+            if row['id'] == str(beasiswa_id):  # Mencari berdasarkan ID
                 if float(user_data['ipk']) >= float(row['ipk']):
                     if int(row['kuota']) > 0:
                         row['kuota'] = str(int(row['kuota']) - 1)
@@ -301,6 +327,19 @@ def daftar_beasiswa(nama_user, beasiswa_id):
         print(f"File tidak ditemukan: {e}")
 
 
+def lihat_beasiswa_terdaftar(nama_user):
+    table = PrettyTable()
+    table.field_names = ["ID", "Nama Beasiswa", "Jumlah Beasiswa", "Tanggal Pendaftaran"]
+
+    try:
+        with open('Transaksi.csv', mode='r', newline='', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                if nama_user == row["nama_user"]:
+                    table.add_row([row['id_transaksi'], row['nama_beasiswa'], row['jumlah_beasiswa'], row['tanggal']])
+        print(table)
+    except FileNotFoundError:
+        print("File Transaksi.csv tidak ditemukan.")
 
 def lihat_data_diri(nama_user):
     try:
@@ -337,8 +376,11 @@ def menu_admin():
             pil_1 = input("Masukan pilihan: ")
             if pil_1 == "1":
                 lihat_data_user()
-            if pil_1 == "2":
+            elif pil_1 == "2":
                 lihat_beasiswa()
+            else:
+                print("Pilihan tidak Valid")
+                menu_admin()
         
         #Buat nambah
         elif pilihan == "2":
@@ -461,15 +503,26 @@ def menu_user(nama_user):
     pilihan = input("Masukkan pilihan: ")
 
     if pilihan == "1":
-        lihat_beasiswa()  # Menampilkan beasiswa yang tersedia
+        lihat_beasiswa()  
         beasiswa_id = input("Masukkan ID beasiswa yang ingin didaftarkan: ")
-        daftar_beasiswa(nama_user, beasiswa_id)  # Mendaftarkan user ke beasiswa
-        menu_user()
-    if pilihan == "2":
+        
+        nama_beasiswa = get_nama_beasiswa_by_id(beasiswa_id)
+        if nama_beasiswa:
+            print(f"Anda mendaftarkan diri untuk beasiswa: {nama_beasiswa}")
+            daftar_beasiswa(nama_user, beasiswa_id)  
+        else:
+            print("Beasiswa dengan ID tersebut tidak ditemukan.")
+        menu_user(nama_user)  
+    
+    elif pilihan == "2":
         lihat_data_diri(nama_user)
-        menu_user()
+    elif pilihan == "3":
+        lihat_beasiswa_terdaftar(nama_user)
+        menu_user(nama_user)  
     elif pilihan == "5":
         menu_login()
+
+
 
 def akses_pengguna(nama, password):
     role = cek_login(nama, password)
