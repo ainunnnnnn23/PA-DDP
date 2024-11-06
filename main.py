@@ -1,4 +1,4 @@
-#last update 30-10-17.39
+#last update 07-11-2024
 
 import pwinput
 import csv
@@ -232,51 +232,86 @@ def hapus_beasiswa(beasiswa_id):
             writer.writerows(data)
         print(f"Beasiswa dengan ID {beasiswa_id} berhasil dihapus.")
 
+def invoice():
+    try:
+        with open("transaksi.csv", "r", newline="", encoding="utf-8") as file:
+            reader = csv.DictReader(file)
+            transaksi = list(reader)
+            if transaksi:
+                last_transaction = transaksi[-1]
+                jumlah_str = last_transaction['jumlah_beasiswa'].replace('Rp. ', '').replace('.', '')
+                try:
+                    jumlah = float(jumlah_str)
+                except ValueError:
+                    jumlah = float(last_transaction['jumlah_beasiswa'])  # Jika sudah dalam format angka
+                
+                print("\n=== INVOICE PENDAFTARAN BEASISWA ===")
+                print("Anda berhasil mendaftar beasiswa")
+                print(f"Nama          : {last_transaction['nama_user']}")
+                print(f"Nama Beasiswa : {last_transaction['nama_beasiswa']}")
+                print(f"Jumlah        : Rp {jumlah:,.2f}")
+                print(f"Tanggal       : {last_transaction['tanggal']}")
+                print("=====================================\n")
+    except FileNotFoundError:
+        print("File transaksi.csv tidak ditemukan.")
+    except Exception as e:
+        print(f"Terjadi kesalahan: {e}")
+
+
 def simpan_transaksi(nama_user, beasiswa_id, jumlah_beasiswa):
     dataheader_transaksi = ["id_transaksi", "nama_user", "nama_beasiswa", "jumlah_beasiswa", "tanggal"]
     
-    x = True
+    # Cek apakah beasiswa ada
     nama_beasiswa = get_nama_beasiswa_by_id(beasiswa_id)
     if not nama_beasiswa:
         print("Beasiswa dengan ID tersebut tidak ditemukan.")
         return
-    if x == False:
-        try:
-            with open('Transaksi.csv', mode='r', newline='', encoding='utf-8') as file:
-                reader = csv.DictReader(file)
-                id_terakhir = max([int(row['id_transaksi']) for row in reader], default=0) + 1
-        except FileNotFoundError:
-            id_terakhir = 1
-
-        # Data transaksi baru dengan nama beasiswa
-        data_transaksi = [{
-            "id_transaksi": id_terakhir,
-            "nama_user": nama_user,
-            "nama_beasiswa": nama_beasiswa,
-            "jumlah_beasiswa": jumlah_beasiswa,
-            "tanggal": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        }]
+    
+    # Cek apakah user sudah mendaftar beasiswa ini sebelumnya
+    if cek_beasiswa_terdaftar(nama_user, nama_beasiswa):
+        print("Kamu telah mendaftar beasiswa ini")
+        return
         
-        # Simpan transaksi ke file
-        try:
-            with open('Transaksi.csv', mode='a', newline='', encoding='utf-8') as file:
-                writer = csv.DictWriter(file, fieldnames=dataheader_transaksi)
-                file.seek(0, 2)  # Menulis header jika file kosong
-                if file.tell() == 0:
-                    writer.writeheader()
-                writer.writerows(data_transaksi)
-            print("Transaksi berhasil disimpan.")
-        except Exception as e:
-            print(f"Terjadi kesalahan saat menyimpan transaksi: {e}")
-    else:
-        daftar_beasiswa_cuma_sekali(nama_beasiswa)
+    # Jika belum terdaftar, lanjut menyimpan transaksi
+    try:
+        with open('Transaksi.csv', mode='r', newline='', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            id_terakhir = max([int(row['id_transaksi']) for row in reader], default=0) + 1
+    except FileNotFoundError:
+        id_terakhir = 1
 
-def daftar_beasiswa_cuma_sekali(nama_beasiswa):
-    with open("Transaksi.csv", mode="r", newline="", encoding="utf-8") as file:
-        reader = csv.DictReader(file)
-        for row in reader:
-            if row["nama_beasiswa"] == nama_beasiswa:
-                print("Kamu telah mendaftar beasiswa ini")
+    # Data transaksi baru
+    data_transaksi = [{
+        "id_transaksi": id_terakhir,
+        "nama_user": nama_user,
+        "nama_beasiswa": nama_beasiswa,
+        "jumlah_beasiswa": jumlah_beasiswa,
+        "tanggal": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }]
+    
+    # Simpan transaksi ke file
+    try:
+        with open('Transaksi.csv', mode='a', newline='', encoding='utf-8') as file:
+            writer = csv.DictWriter(file, fieldnames=dataheader_transaksi)
+            file.seek(0, 2)  
+            if file.tell() == 0:
+                writer.writeheader()
+            writer.writerows(data_transaksi)
+        invoice()  # Tampilkan invoice setelah berhasil menyimpan
+
+    except Exception as e:
+        print(f"Terjadi kesalahan saat menyimpan transaksi: {e}")
+
+def cek_beasiswa_terdaftar(nama_user, nama_beasiswa):
+    try:
+        with open("Transaksi.csv", mode="r", newline="", encoding="utf-8") as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                if row["nama_user"] == nama_user and row["nama_beasiswa"] == nama_beasiswa:
+                    return True
+        return False
+    except FileNotFoundError:
+        return False
 
 def daftar_beasiswa(nama_user, beasiswa_id):
     beasiswa_data = []
@@ -393,6 +428,9 @@ def menu_admin():
                         continue
                     jumlah = float(input("Masukan jumlah beasiswa: "))
                     kuota = int(input("Masukan kuota beasiswa: "))
+                    if ipk or jumlah or kuota < 0:
+                        print("Angka tidak boleh negatif")
+                        break
                     tambah_beasiswa(nama, ipk, jumlah, kuota)
                     break
                 except ValueError:
@@ -442,7 +480,10 @@ def menu_admin():
                 valid_input = True  # Flag untuk cek validitas input
                 
                 # Validasi input IPK
-                ipk_input = input("Masukkan IPK baru (kosongkan jika tidak ingin mengubah): ")
+                ipk_input = float(input("Masukkan IPK baru (kosongkan jika tidak ingin mengubah): "))
+                if ipk_input < 0 or ipk_input > 4:
+                    print("Ipk tidak valid")
+                    break
                 try:
                     ipk = float(ipk_input) if ipk_input else None
                 except ValueError:
