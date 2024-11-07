@@ -4,6 +4,7 @@ import pwinput
 import csv
 from prettytable import PrettyTable
 from datetime import datetime
+import random
 
 csv_file = 'data.csv'
 
@@ -361,7 +362,6 @@ def daftar_beasiswa(nama_user, beasiswa_id):
     except FileNotFoundError as e:
         print(f"File tidak ditemukan: {e}")
 
-
 def lihat_beasiswa_terdaftar(nama_user):
     table = PrettyTable()
     table.field_names = ["ID", "Nama Beasiswa", "Jumlah Beasiswa", "Tanggal Pendaftaran"]
@@ -392,6 +392,111 @@ def lihat_data_diri(nama_user):
         print("Data pengguna tidak ditemukan.")
     except FileNotFoundError:
         print("File data.csv tidak ditemukan.")
+
+def undi_beasiswa(nama_user):
+    try:
+        with open('Transaksi.csv', mode='r', newline='', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            berkas_transaksi = [row for row in reader if row['nama_user'] == nama_user]
+
+        if not berkas_transaksi:
+            print("Anda belum mendaftar untuk beasiswa manapun.")
+            return
+
+        print("=== Pilihan Beasiswa ===")
+        for index, row in enumerate(berkas_transaksi, start=1):
+            print(f"{index}. {row['nama_beasiswa']} - Jumlah: {row['jumlah_beasiswa']} (ID: {row['id_transaksi']})")
+
+        pilihan = int(input("Pilih beasiswa yang ingin diundi (masukkan nomor): ")) - 1
+
+        if pilihan < 0 or pilihan >= len(berkas_transaksi):
+            print("Pilihan tidak valid.")
+            return
+            
+        beasiswa_terpilih = berkas_transaksi[pilihan]
+        print(f"\nAnda telah memilih beasiswa: {beasiswa_terpilih['nama_beasiswa']}")
+
+        # Mengundi
+        jika_beruntung = random.choice([True, False])  # 50% peluang
+        if jika_beruntung:
+            # Konversi ke float
+            jumlah_beasiswa = float(beasiswa_terpilih['jumlah_beasiswa'].replace('Rp. ', '').replace('.', '').replace(',', ''))
+            print(f"Selamat! Anda mendapatkan beasiswa sebesar Rp {jumlah_beasiswa:,.2f}!")  # Format angka
+            update_saldo(nama_user, jumlah_beasiswa)  # Memasukkan jumlah beasiswa ke saldo
+        else:
+            print("Sayang sekali, Anda tidak mendapatkan beasiswa ini. Coba lagi lain waktu.")
+
+    except FileNotFoundError:
+        print("File Transaksi.csv tidak ditemukan.")
+    except ValueError as ve:
+        print(f"Terjadi kesalahan konversi: {ve}")
+    except Exception as e:
+        print(f"Terjadi kesalahan: {e}")
+
+def update_saldo(nama_user, jumlah):
+    updated = False
+    data = []
+    try:
+        with open('data.csv', mode='r', newline='', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            data = list(reader)
+        
+        for row in data:
+            if row['nama'] == nama_user:
+                # Pastikan saldo juga merupakan float sebelum ditambahkan
+                row['saldo'] = str(float(row['saldo']) + jumlah)  # Update saldo sebagai string
+                
+                updated = True
+        
+        if updated:
+            with open('data.csv', mode='w', newline='', encoding='utf-8') as file:
+                writer = csv.DictWriter(file, fieldnames=data[0].keys())
+                writer.writeheader()
+                writer.writerows(data)
+            saldo_akhir = float(row['saldo'])  
+            print(f"Saldo Anda berhasil diperbarui. Saldo saat ini: Rp {saldo_akhir:,.2f}.")  
+        else:
+            print("Pengguna tidak ditemukan.")
+    except FileNotFoundError:
+        print("File data.csv tidak ditemukan.")
+    except ValueError as ve:
+        print(f"Terjadi kesalahan konversi: {ve}")
+    except Exception as e:
+        print(f"Terjadi kesalahan: {e}")
+
+
+def search():
+    nama = input("Search: ").lower()
+    found = False
+    
+    try:
+        # Buat tabel
+        table = PrettyTable()
+        table.field_names = ["ID", "Nama Beasiswa", "IPK Minimal", "Jumlah", "Kuota"]
+        
+        with open("beasiswa.csv", mode="r", newline="", encoding="utf-8") as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                if nama in row['nama'].lower():
+                    table.add_row([
+                        row['id'],
+                        row['nama'],
+                        row['ipk'],
+                        row['jumlah'],
+                        row['kuota']
+                    ])
+                    found = True
+        
+        if found:
+            print("\nHasil pencarian:")
+            print(table)
+        else:
+            print("\nBeasiswa tidak ditemukan.")
+            
+    except FileNotFoundError:
+        print("File beasiswa.csv tidak ditemukan.")
+    except Exception as e:
+        print(f"Terjadi kesalahan: {e}")
 
 # Buat menu Admin
 def menu_admin():
@@ -544,25 +649,29 @@ def menu_user(nama_user):
     pilihan = input("Masukkan pilihan: ")
 
     if pilihan == "1":
-        lihat_beasiswa()  
-        beasiswa_id = input("Masukkan ID beasiswa yang ingin didaftarkan: ")
-        
-        nama_beasiswa = get_nama_beasiswa_by_id(beasiswa_id)
-        if nama_beasiswa:
-            print(f"Anda mendaftarkan diri untuk beasiswa: {nama_beasiswa}")
-            daftar_beasiswa(nama_user, beasiswa_id)  
+        lihat_beasiswa()
+        beasiswa_id = input("Masukkan ID beasiswa yang ingin didaftarkan (ketik s untuk search, ketik r untuk sorting): ").lower()
+        if beasiswa_id == "s":
+            search()
+            menu_user(nama_user)
         else:
-            print("Beasiswa dengan ID tersebut tidak ditemukan.")
-        menu_user(nama_user)  
+            nama_beasiswa = get_nama_beasiswa_by_id(beasiswa_id)
+            if nama_beasiswa:
+                print(f"Anda mendaftarkan diri untuk beasiswa: {nama_beasiswa}")
+                daftar_beasiswa(nama_user, beasiswa_id)
+            else:
+                print("Beasiswa dengan ID tersebut tidak ditemukan.")
+        menu_user(nama_user)
     
     elif pilihan == "2":
         lihat_data_diri(nama_user)
     elif pilihan == "3":
         lihat_beasiswa_terdaftar(nama_user)
-        menu_user(nama_user)  
+        menu_user(nama_user)
+    elif pilihan == "4":
+        undi_beasiswa(nama_user)
     elif pilihan == "5":
         menu_login()
-
 
 
 def akses_pengguna(nama, password):
@@ -586,7 +695,7 @@ def menu_login():
 
         # Buat login
         if pil_1 == "1": 
-            print("===== Login ======")
+            print("===== Login ======") 
             nama = input("Masukan nama: ")
             password = pwinput.pwinput("Masukan Password: ")
             akses_pengguna(nama, password)
