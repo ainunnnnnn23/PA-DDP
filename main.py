@@ -1,4 +1,4 @@
-#last update 07-11-2024
+#last update 07-11-2024 : 23.12
 
 import pwinput
 import csv
@@ -169,30 +169,37 @@ def update_data_user(nama, role=None, saldo=None):
     except FileNotFoundError:
         print("File data.csv tidak ditemukan.")
 
-
 def hapus_akun(nama):
     data = []
-    deleted = False
+    found = False  
     try:
-        # Membaca data akun dari file
+    
         with open('data.csv', mode='r', newline='', encoding='utf-8') as file:
             reader = csv.DictReader(file)
             data = list(reader)
         
-        # Filter data untuk menghapus akun dengan nama yang cocok
-        data = [row for row in data if row['nama'] != nama]
         
-        deleted = True
+        for row in data:
+            if row['nama'] == nama:
+                found = True  
+                continue  
+        
+        # Jika akun ditemukan, simpan sisa data ke file
+        if found:
+            data = [row for row in data if row['nama'] != nama]
+            with open('data.csv', mode='w', newline='', encoding='utf-8') as file:
+                writer = csv.DictWriter(file, fieldnames=['nama', 'password', 'role', 'ipk', 'saldo'])
+                writer.writeheader()
+                writer.writerows(data)
+            print(f"Akun dengan nama {nama} berhasil dihapus.")
+        else:
+            print(f"Akun dengan nama {nama} tidak ditemukan.")
+    
     except FileNotFoundError:
         print("File data.csv tidak ditemukan.")
-    
-    # Menyimpan ulang data yang sudah dihapus ke file
-    if deleted:
-        with open('data.csv', mode='w', newline='', encoding='utf-8') as file:
-            writer = csv.DictWriter(file, fieldnames=['nama', 'password', 'role', 'ipk', 'saldo'])
-            writer.writeheader()
-            writer.writerows(data)
-        print(f"Akun dengan nama {nama} berhasil dihapus.")
+    except Exception as e:
+        print(f"Terjadi kesalahan: {e}")
+
 
 def get_nama_beasiswa_by_id(beasiswa_id):
     try:
@@ -466,7 +473,7 @@ def update_saldo(nama_user, jumlah):
 
 
 def search():
-    nama = input("Search: ").lower()
+    nama = input("Nama beasiswa: ").lower()
     found = False
     
     try:
@@ -533,7 +540,7 @@ def menu_admin():
                         continue
                     jumlah = float(input("Masukan jumlah beasiswa: "))
                     kuota = int(input("Masukan kuota beasiswa: "))
-                    if ipk or jumlah or kuota < 0:
+                    if ipk < 0 or jumlah < 0 or kuota < 0:
                         print("Angka tidak boleh negatif")
                         break
                     tambah_beasiswa(nama, ipk, jumlah, kuota)
