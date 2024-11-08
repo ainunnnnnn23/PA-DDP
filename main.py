@@ -1,4 +1,4 @@
-#last update 07-11-2024 : 23.12
+#last update 08-11-2024 : 08.54
 
 import pwinput
 import csv
@@ -9,7 +9,7 @@ import random
 csv_file = 'data.csv'
 
 simbol  = [
-    "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "+", "=", 
+    "!", "@", "#", "$", "%", "^", "&", "*", "(",")", "-", "_", "+", "=", 
     "{", "}", "[", "]", ":", ";", "\"", "'", "<", ">", ",", ".", "?", "/", "|", "~"
 ]
 angka = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
@@ -178,13 +178,11 @@ def hapus_akun(nama):
             reader = csv.DictReader(file)
             data = list(reader)
         
-        
         for row in data:
             if row['nama'] == nama:
                 found = True  
                 continue  
         
-        # Jika akun ditemukan, simpan sisa data ke file
         if found:
             data = [row for row in data if row['nama'] != nama]
             with open('data.csv', mode='w', newline='', encoding='utf-8') as file:
@@ -505,6 +503,51 @@ def search():
     except Exception as e:
         print(f"Terjadi kesalahan: {e}")
 
+def sorting(file_path, urutkan_berdasarkan='ipk', menurun=False):
+    try:
+        with open(file_path, mode='r', newline='', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            data = list(reader)
+
+            # Pastikan kolom untuk pengurutan valid
+            if urutkan_berdasarkan not in ['ipk', 'jumlah', 'id']:
+                print("Kriteria pengurutan tidak valid. Gunakan 'ipk', 'jumlah', atau 'id'.")
+                return
+            
+            # Mengubah 'jumlah' menjadi float untuk pengurutan jika urutkan berdasarkan jumlah
+            if urutkan_berdasarkan == 'jumlah':
+                for entry in data:
+                    try:
+                        entry['jumlah'] = float(entry['jumlah'].replace('Rp. ', '').replace('.', '').replace(',', ''))
+                    except ValueError:
+                        print(f"Kesalahan konversi pada entri: {entry}")
+                        return
+            
+            # Melakukan pengurutan
+            if urutkan_berdasarkan == 'id':
+                sorted_data = sorted(data, key=lambda x: int(x['id']), reverse=menurun)  # ID diurutkan sebagai integer
+            else:
+                sorted_data = sorted(data, key=lambda x: float(x[urutkan_berdasarkan]), reverse=menurun)
+
+        # Tulis kembali ke file
+        with open(file_path, mode='w', newline='', encoding='utf-8') as file:
+            writer = csv.DictWriter(file, fieldnames=data[0].keys())
+            writer.writeheader()
+            writer.writerows(sorted_data)
+        
+        print("\nData beasiswa berhasil diurutkan.")
+        # Tampilkan data yang sudah diurutkan
+        table = PrettyTable()
+        table.field_names = ["ID", "Nama Beasiswa", "IPK Minimal", "Jumlah", "Kuota"]
+        for row in sorted_data:
+            table.add_row([row['id'], row['nama'], row['ipk'], row['jumlah'], row['kuota']])
+        print(table)
+
+    except FileNotFoundError:
+        print("File tidak ditemukan.")
+    except Exception as e:
+        print(f"Terjadi kesalahan: {e}")
+
 # Buat menu Admin
 def menu_admin():
     while True:
@@ -658,17 +701,55 @@ def menu_user(nama_user):
     if pilihan == "1":
         lihat_beasiswa()
         beasiswa_id = input("Masukkan ID beasiswa yang ingin didaftarkan (ketik s untuk search, ketik r untuk sorting): ").lower()
+        
         if beasiswa_id == "s":
             search()
             menu_user(nama_user)
+        elif beasiswa_id == "r":
+            print("Pilih kriteria pengurutan:")
+            print("1. IPK")
+            print("2. Jumlah Beasiswa")
+            print("3. ID")  # Menambahkan pilihan baru untuk ID
+            pilihan = input("Masukkan pilihan (1, 2, atau 3): ")
+
+            if pilihan == '1':
+                urutkan_berdasarkan = 'ipk'
+            elif pilihan == '2':
+                urutkan_berdasarkan = 'jumlah'
+            elif pilihan == '3':
+                urutkan_berdasarkan = 'id'  # Jika ID dipilih
+            else:
+                print("Pilihan tidak valid.")
+                return
+
+            print("Pilih urutan:")
+            print("1. Tertinggi ke Terendah")
+            print("2. Terendah ke Tertinggi")
+            
+            urutan = input("Masukkan pilihan (1 atau 2): ")
+            
+            if urutan == '1':
+                menurun = True  
+            elif urutan == '2':
+                menurun = False  
+            else:
+                print("Pilihan tidak valid.")
+                return
+            # Panggil fungsi sorting dengan input yang diberikan
+            sorting("beasiswa.csv", urutkan_berdasarkan, menurun)
+            menu_user(nama_user) 
         else:
+            # Validasi ID beasiswa
+            if not beasiswa_id.isdigit():  
+                print("ID yang dimasukkan tidak valid. Harap masukkan angka.")
+                return
+            
             nama_beasiswa = get_nama_beasiswa_by_id(beasiswa_id)
             if nama_beasiswa:
                 print(f"Anda mendaftarkan diri untuk beasiswa: {nama_beasiswa}")
                 daftar_beasiswa(nama_user, beasiswa_id)
             else:
                 print("Beasiswa dengan ID tersebut tidak ditemukan.")
-        menu_user(nama_user)
     
     elif pilihan == "2":
         lihat_data_diri(nama_user)
@@ -679,6 +760,7 @@ def menu_user(nama_user):
         undi_beasiswa(nama_user)
     elif pilihan == "5":
         menu_login()
+
 
 
 def akses_pengguna(nama, password):
