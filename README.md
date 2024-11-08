@@ -18,7 +18,9 @@ Untuk opsi login, kita akan diminta untuk memasukkan nama dan juga password yang
 
 ![image](https://github.com/user-attachments/assets/1f327a17-d42e-4f72-a41c-448a51113375)
 
-Pada menu pada admin dapat melihat beasiswa/user, menambahkan beasiswa, mengupdate beasiswa/user, menghapus beasiswa/user yang diinginkan oleh admin, serta terdapat opsi logout.
+Pada menu admin ini dapat melihat beasiswa/user, menambahkan beasiswa, mengupdate beasiswa/user, menghapus beasiswa/user yang diinginkan oleh admin, serta terdapat opsi logout.
+
+
 
 
 
